@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tres tarjetas grandes con margen</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: "Segoe UI", sans-serif;
+      background: linear-gradient(135deg, #65707d, #ffffff);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .contenedor {
+      display: flex;
+      gap: 25px; /* margen entre tarjetas */
+      justify-content: center;
+      align-items: center;
+      flex-wrap: wrap;
+      width: 90vw; /* deja margen lateral */
+      height: 70vh; /* deja margen superior e inferior */
+    }
+
+    .tarjeta {
+      background-color: #ffffff;
+      flex: 1 1 28%; /* cada una ocupa ~1/3 del ancho */
+      height: 100%;
+      min-width: 300px;
+      border-radius: 20px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between; /* reparte título, texto y botón */
+      align-items: center;
+      padding: 30px;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      text-align: center;
+    }
+
+    .tarjeta:hover {
+      transform: translateY(-10px);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+
+    .tarjeta h2 {
+      margin: 0;
+      font-size: 1.6em;
+      color: #333333;
+    }
+
+    .tarjeta p {
+      color: #555555;
+      font-size: 1em;
+      margin: 15px 10px 25px;
+      line-height: 1.4;
+    }
+
+    .boton {
+      width: 80%;
+      padding: 15px;
+      border: none;
+      border-radius: 12px;
+      background-color: rgb(172, 161, 236);
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+      font-size: 1.1em;
+    }
+
+    .boton:hover {
+      background-color: #000000;
+    }
+
+    @media (max-width: 900px) {
+      .contenedor {
+        flex-direction: column;
+        height: auto;
+        padding: 40px 0;
+      }
+      .tarjeta {
+        width: 80%;
+        height: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="contenedor">
+    <div class="tarjeta">
+      <h2>Generar una nueva submission</h2>
+      <p>Descripción breve de la funcionalidad o contenido del primer botón. Puedes cambiar este texto por lo que necesites.</p>
+      <button class="boton">Botón 1</button>
+    </div>
+
+    <div class="tarjeta">
+      <h2>Subir una nueva versión</h2>
+      <p>Pequeño texto que explica la función o acción que realiza el segundo botón dentro de la aplicación.</p>
+      <button class="boton">Botón 2</button>
+    </div>
+
+    <div class="tarjeta">
+      <h2>Explorar resultados previos</h2>
+      <p>Breve descripción o indicación sobre lo que hace esta sección o la acción que ejecuta este botón.</p>
+      <button class="boton">Botón 3</button>
+    </div>
+  </div>
+</body>
+</html>
