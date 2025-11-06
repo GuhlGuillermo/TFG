@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Software de revisión preliminar de Registered Reports</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+    <style>
+        /* Spinner y mensaje de carga */
+        #loading {
+            display: none;
+            margin-top: 20px;
+            font-size: 18px;
+            color: #007bff;
+        }
+        .spinner {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            border: 3px solid rgba(0,0,0,0.1);
+            border-left-color: #007bff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            vertical-align: middle;
+            margin-right: 10px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        /* Separación extra para el botón de borrar */
+        #clear-btn {
+            background-color: #dc3545;
+            margin-top: 25px;
+        }
+        /* Campo de título */
+        #titulo {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+        }
+        .alert {
+            padding: 15px;
+            margin: 10px auto;
+            border-radius: 8px;
+            width: 80%;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .alert.error {
+            background-color: #ffcccc;
+            color: #a00;
+            border: 1px solid #a00;
+        }
+
+        .alert.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+    </style>
+</head>
+<body>
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div id="mensajes">
+      {% for category, message in messages %}
+        <div class="alert {{ category }}">{{ message }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+
+
+<div class="container">
+    <h1>Preliminary Review Software for Registered Reports</h1>
+    <p class="model">Modelo: {{ model_name }}</p>
+
+    <!-- Zona de carga drag & drop -->
+    <form method="POST" enctype="multipart/form-data" id="upload-form">
+
+        <label for="titulo"><strong>Título del documento:</strong></label>
+        <input type="text" id="titulo" name="titulo" placeholder="Introduce un título descriptivo" required>
+        <label class="dropzone" id="dropzone">
+            📄 Arrastra un archivo PDF o 
+            <span style="text-decoration: underline; color:#0056b3;">selecciona uno de tu ordenador</span>
+            <input type="file" name="pdf" id="file-input" accept=".pdf">
+        </label>
+
+        <!-- Icono y nombre del PDF cargado -->
+        <div id="file-info" style="display:none; margin-top:10px;">
+            <i class="fas fa-file-pdf" style="color:#dc3545; font-size:20px; margin-right:6px;"></i>
+            <span id="file-name" style="font-weight:bold;"></span>
+        </div>
+
+        <!-- Boton con funcion asignada -->
+        <button type="submit" name="action" value="nueva_submision" id="analyze-btn" style="display:none;">
+            Analizar PDF
+        </button>
+        <!-- TODO arreglar el estilo de este boton -->
+        <button type="submit" name="action" value="atras" id="analyze-btn" style="display:none;">
+            Atras
+        </button>
+
+        <!-- Mensaje de carga -->
+        <div id="loading">
+            <div class="spinner"></div> Analizando el PDF, por favor espere...
+        </div>
+    </form>
+
+    <!-- Resultados -->
+        {% if result %}
+            <h2>📊 Resultados del Checklist</h2>
+            {% if result.error %}
+                <p>Error: {{ result.error }}</p>
+            {% else %}
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Pregunta</th>
+                            <th>Respuesta</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for key, value in result.items() %}
+                            <tr>
+                                <td>{{ key }}</td>
+                                <td>{{ value }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% endif %}
+        {% endif %}
+</div>
+
+<script>
+const dropzone = document.getElementById("dropzone");
+const fileInput = document.getElementById("file-input");
+const fileInfo = document.getElementById("file-info");
+const fileName = document.getElementById("file-name");
+const analyzeBtn = document.getElementById("analyze-btn");
+const loading = document.getElementById("loading");
+
+
+// --- Efectos Drag & Drop ---
+dropzone.addEventListener("dragover", e => {
+    e.preventDefault();
+    dropzone.style.backgroundColor = "#eef4ff";
+});
+dropzone.addEventListener("dragleave", () => {
+    dropzone.style.backgroundColor = "white";
+});
+dropzone.addEventListener("drop", e => {
+    e.preventDefault();
+    dropzone.style.backgroundColor = "white";
+    const file = e.dataTransfer.files[0];
+    if (file && file.name.endsWith(".pdf")) {
+        fileInput.files = e.dataTransfer.files;
+        mostrarArchivo(file);
+    } else {
+        alert("Por favor sube un archivo PDF válido.");
+    }
+});
+
+// --- Selección manual ---
+fileInput.addEventListener("change", e => {
+    const file = e.target.files[0];
+    if (file) mostrarArchivo(file);
+});
+
+function mostrarArchivo(file) {
+    fileInfo.style.display = "inline-flex";
+    fileName.textContent = file.name;
+    analyzeBtn.style.display = "inline-block";
+    newBtn.style.display = "inline-block";
+
+}
+
+// --- Mostrar mensaje de carga ---
+const form = document.getElementById("upload-form");
+form.addEventListener("submit", (e) => {
+    const clicked = document.activeElement.value;
+    if (clicked === "analizar") {
+        loading.style.display = "block";
+        analyzeBtn.disabled = true;
+    } else {
+        loading.style.display = "none";
+    }
+});
+
+// --- Botón Borrar Resultados ---
+document.addEventListener("click", (e) => {
+    if (e.target && e.target.id === "clear-btn") {
+        const resultsContainer = document.getElementById("results-container");
+        if (resultsContainer) resultsContainer.remove();
+        fileInput.value = "";
+        fileInfo.style.display = "none";
+        fileName.textContent = "";
+        analyzeBtn.style.display = "none";
+        loading.style.display = "none";
+        analyzeBtn.disabled = false;
+        alert("Resultados borrados.");
+    }
+});
+</script>
+</body>
+</html>

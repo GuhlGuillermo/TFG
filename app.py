@@ -2,7 +2,7 @@ import webbrowser
 import threading
 import json as js
 import requests
-from flask import Flask, render_template, request, jsonify, redirect, session, url_for
+from flask import Flask, render_template, request, jsonify, redirect, session, url_for, flash
 from pymongo import MongoClient
 from model_utils import (
     load_model, pdf_to_text, build_prompt, generate_output,
@@ -12,6 +12,7 @@ from model_utils import (
 from datetime import datetime
 
 app = Flask(__name__)
+app.secret_key = "clave_secreta_segura"
 
 # Cargar modelo
 model, tokenizer, model_name = load_model()
@@ -26,7 +27,6 @@ CLIENT_SECRET = "ac01f677-7aeb-40a6-acb2-5ac23b8c0db8"
 REDIRECT_URI = "http://192.168.1.140:5000/callback"
 ORCID_BASE = "https://orcid.org"
 
-app.secret_key = "clave_secreta_segura"
 
 
 
@@ -37,9 +37,13 @@ def home():
 
 
 # ---------------------- DASHBOARD ----------------------
-@app.route("/dashboard")
+@app.route("/dashboard", methods=['GET', 'POST'])
 def dashboard():
-    return render_template("dashboard.html")
+    if request.method == 'POST':
+        action = request.form.get("action")
+        if(action == "nueva_submision"):    
+            return redirect(url_for("nueva_submission"))
+    return render_template("prueba.html")
 
 
 
@@ -90,13 +94,45 @@ def callback():
 
 
 #GENERAR NUEVA SUBMISIÓN
-@app.route("/nueva_submision")
-def nueva_submision():
-    id_submision = get_id(None)
-    id_user = session.get("orcid_id", "invitado")
-    print("Nueva sumisión creada:", id_submision, "para usuario:", id_user)
+@app.route("/nueva_submision", methods=['GET', 'POST'])
+def nueva_submission():
+    global json_total, version
+    result = None
+    mensaje = ""
+    user=session.get("orcid_id", "invitado")
+    id_submision = get_id()
 
-    return 
+    if request.method == "POST":
+        uploaded_file = request.files.get("pdf")
+        accion = request.form.get("action")
+        print("Acción recibida:", accion)
+
+        if uploaded_file and uploaded_file.filename.endswith(".pdf"):
+            if accion == "nueva_submision":
+                titulo = request.form.get("titulo")
+                version = 1
+                id_pdf = get_id()
+                fecha = str(datetime.now()).split(".")[0]
+
+                if(comprobar_existencia_submision(titulo, user) == False):
+                    text = pdf_to_text(uploaded_file)
+                    messages = build_prompt(text)
+                    result = generate_output(model, tokenizer, messages)
+                    print("Creando nueva sumisión")
+                    json_total = crear_submision(titulo, user, id_submision,id_pdf)
+                    json_total = modificar_submision(json_total, version, result, fecha) 
+                    insertar_bd(json_total) 
+                else:
+                    flash("Esa submission ya existe, pruebe a subir una nueva versión", "error")
+                    print("La submisión ya existe") 
+                print(json_total)
+            #TODO arreglar el boton de atras
+            elif accion == "atras":
+                return redirect(url_for("dashboard"))
+        else:
+            mensaje = "Por favor, sube un archivo PDF válido."
+
+    return render_template("new_submission.html", result=result, model_name=model_name, mensaje=mensaje)
 
 
 # ---------------------- ANALIZAR PDF ----------------------
@@ -106,7 +142,7 @@ def analizar():
     result = None
     mensaje = ""
     user=session.get("orcid_id", "invitado")
-    id_submision = get_id(None)
+    id_submision = get_id()
 
     if request.method == "POST":
         uploaded_file = request.files.get("pdf")
@@ -118,7 +154,7 @@ def analizar():
 
                 titulo = get_titulo(uploaded_file)
                 version = recalcular_version(titulo, user)
-                id_pdf = get_id(uploaded_file)
+                id_pdf = get_id()
                 fecha = str(datetime.now()).split(".")[0]
 
                 text = pdf_to_text(uploaded_file)
@@ -144,22 +180,6 @@ def analizar():
                     borrar_bd(titulo) 
                     insertar_bd(json_total)    
                 print(json_total)
-                
-
-                # json_aux = montar_JSON(result, id_pdf, titulo, fecha, version)
-                # json_aux_bd = js.loads(json_aux)
-                # print("AUN NO EJECUTADO LOADS")
-                # print(type(json_total_bd))
-                # json_total_bd = js.loads(json_total)
-                # print("EJECUTADO LOADS")
-
-                # collection = connect_bd()
-                # print("AUN NO EJECUTADO INSERTAR")
-                # insertar_bd(json_total_bd)
-                # print("AUN NO EJECUTADO INSERTAR")
-
-                # mensaje = f"PDF '{titulo}' analizado correctamente (versión {version})."
-                # print("Analizado:", json_aux)
         else:
             mensaje = "Por favor, sube un archivo PDF válido."
 

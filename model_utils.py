@@ -47,16 +47,17 @@ def build_prompt(texto_pdf):
                 "The output must be in JSON format, with each question as a key (e.g., 'Q1', 'Q2', ..., 'Q10') and the corresponding answer as the value.\n\n"
                 "For example, the output should look like this:\n"
                 "{\n"
-                "    'Q1': 'Yes',\n"
-                "    'Q2': 'No',\n"
-                "    'Q3': 'N/A',\n"
+                "    'Q1.1': 'Yes',\n"
+                "    'Q1.2': 'No',\n"
+                "    'Q2': 'N/A',\n"
+                "    'Q3': 'Yes',\n"
                 "    'Q4': 'Yes',\n"
-                "    'Q5': 'Yes',\n"
-                "    'Q6': 'No',\n"
-                "    'Q7': 'Yes',\n"
-                "    'Q8': 'No',\n"
-                "    'Q9': 'Yes',\n"
-                "    'Q10': 'No'\n"
+                "    'Q5': 'No',\n"
+                "    'Q6': 'Yes',\n"
+                "    'Q7': 'No',\n"
+                "    'Q8': 'Yes',\n"
+                "    'Q9': 'No'\n"
+                "    'Q10': 'Yes'\n"
                 "}\n\n"
                 "Checklist:\n"
                 "Q1.1 Are null hypotheses explicitly defined?\n"
@@ -109,7 +110,7 @@ def get_titulo(file):
         titulo = "Sin título"
     return titulo
 
-def get_id(file):
+def get_id():
     return shortuuid.uuid()
 
 
