@@ -7,7 +7,7 @@ from pymongo import MongoClient
 from model_utils import (
     load_model, pdf_to_text, build_prompt, generate_output,
     get_titulo, get_id, montar_JSON, connect_bd, insertar_bd, recalcular_version, comprobar_existencia_submision, crear_submision
-    ,modificar_submision, buscar_en_bd, borrar_bd
+    ,modificar_submision, buscar_en_bd, borrar_bd, buscar_titulos_bd
 )
 from datetime import datetime
 
@@ -43,6 +43,8 @@ def dashboard():
         action = request.form.get("action")
         if(action == "nueva_submision"):    
             return redirect(url_for("nueva_submission"))
+        if(action == "nueva_version"):    
+            return redirect(url_for("nueva_version"))
     return render_template("prueba.html")
 
 
@@ -92,8 +94,6 @@ def callback():
     return redirect(url_for("dashboard"))
 
 
-
-#GENERAR NUEVA SUBMISIÓN
 @app.route("/nueva_submision", methods=['GET', 'POST'])
 def nueva_submission():
     global json_total, version
@@ -106,6 +106,7 @@ def nueva_submission():
         uploaded_file = request.files.get("pdf")
         accion = request.form.get("action")
         print("Acción recibida:", accion)
+        
 
         if uploaded_file and uploaded_file.filename.endswith(".pdf"):
             if accion == "nueva_submision":
@@ -126,13 +127,28 @@ def nueva_submission():
                     flash("Esa submission ya existe, pruebe a subir una nueva versión", "error")
                     print("La submisión ya existe") 
                 print(json_total)
-            #TODO arreglar el boton de atras
-            elif accion == "atras":
-                return redirect(url_for("dashboard"))
         else:
             mensaje = "Por favor, sube un archivo PDF válido."
 
     return render_template("new_submission.html", result=result, model_name=model_name, mensaje=mensaje)
+
+
+@app.route("/nueva_version", methods=['GET', 'POST'])
+def nueva_version():
+    user=session.get("orcid_id", "invitado")
+    titulos = buscar_titulos_bd(user)
+    print("Títulos encontrados para el usuario:", titulos)
+    return render_template("new_version.html", titulos=titulos)
+
+
+#TODO juntar con analizar
+@app.route("/nueva_version/<titulo>")
+def ver_archivo(titulo):
+    doc = buscar_en_bd(titulo, session.get("orcid_id", "invitado"))
+    if not doc:
+        return f"No se encontró el archivo '{titulo}'", 404
+    return render_template("index.html")
+
 
 
 # ---------------------- ANALIZAR PDF ----------------------
@@ -184,36 +200,6 @@ def analizar():
             mensaje = "Por favor, sube un archivo PDF válido."
 
     return render_template("index.html", result=result, model_name=model_name, mensaje=mensaje)
-
-
-# ---------------------- API: TÍTULOS ----------------------
-@app.route("/api/titulos")
-def api_titulos():
-    """Devuelve todos los títulos únicos almacenados"""
-    collection = connect_bd()
-    titulos = collection.distinct("titulo")
-    return jsonify(titulos)
-
-
-# ---------------------- API: VERSIONES DE UN TÍTULO ----------------------
-@app.route("/api/versiones/<titulo>")
-def api_versiones(titulo):
-    """Devuelve las versiones del título indicado"""
-    collection = connect_bd()
-    docs = collection.find({"titulo": titulo}, {"_id": 0, "version.numero": 1})
-    versiones = sorted([d["version"]["numero"] for d in docs])
-    return jsonify(versiones)
-
-
-# ---------------------- API: DETALLE DE UNA VERSIÓN ----------------------
-@app.route("/api/detalle/<titulo>/<int:version>")
-def api_detalle(titulo, version):
-    """Devuelve las preguntas y respuestas de una versión concreta"""
-    collection = connect_bd()
-    doc = collection.find_one({"titulo": titulo, "version.numero": version}, {"_id": 0})
-    if not doc:
-        return jsonify({"error": "No encontrado"}), 404
-    return jsonify(doc["version"]["preguntas_respuestas"])
 
 
 # ---------------------- ABRIR NAVEGADOR ----------------------

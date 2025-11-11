@@ -64,7 +64,6 @@
             font-style: italic;
             color: #666;
         }
-        /* Spinner */
         #loading {
             display: none;
             margin-top: 20px;
@@ -82,10 +81,7 @@
             vertical-align: middle;
             margin-right: 10px;
         }
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-        /* Alertas */
+        @keyframes spin { to { transform: rotate(360deg); } }
         .alert {
             padding: 15px;
             margin: 10px auto;
@@ -112,10 +108,14 @@
         }
         #atras {
             background-color: #6c757d;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
         }
-        #atras:hover {
-            background-color: #5a6268;
-        }
+        #atras:hover { background-color: #5a6268; }
     </style>
 </head>
 <body>
@@ -133,7 +133,7 @@
     <h1>Preliminary Review Software for Registered Reports</h1>
     <p class="model">Modelo: {{ model_name }}</p>
 
-    <!-- Formulario solo para subir PDF -->
+    <!-- Solo zona de carga PDF, sin campo título -->
     <form method="POST" enctype="multipart/form-data" id="upload-form">
 
         <label class="dropzone" id="dropzone">
@@ -148,7 +148,7 @@
         </div>
 
         <div class="button-row">
-            <button type="button" id="atras" data-url="{{ url_for('nueva_version') }}">Atrás</button>
+            <button type="button" id="atras" data-url="{{ url_for('dashboard') }}">Atrás</button>
             <button type="submit" name="action" value="nueva_submision" id="analyze-btn" style="display:none;">
                 Analizar PDF
             </button>
@@ -187,7 +187,7 @@ const analyzeBtn = document.getElementById("analyze-btn");
 const loading = document.getElementById("loading");
 const backBtn = document.getElementById("atras");
 
-// --- Efectos Drag & Drop ---
+// Drag & drop
 dropzone.addEventListener("dragover", e => {
     e.preventDefault();
     dropzone.style.backgroundColor = "#eef4ff";
@@ -207,19 +207,20 @@ dropzone.addEventListener("drop", e => {
     }
 });
 
-// --- Selección manual ---
+// Selección manual
 fileInput.addEventListener("change", e => {
     const file = e.target.files[0];
     if (file) mostrarArchivo(file);
 });
 
+// Mostrar info del archivo y botón analizar
 function mostrarArchivo(file) {
     fileInfo.style.display = "inline-flex";
     fileName.textContent = file.name;
     analyzeBtn.style.display = "inline-block";
 }
 
-// --- Botón Atrás ---
+// Botón Atrás: prioridad total, no depende del form
 if (backBtn) {
     backBtn.addEventListener("click", () => {
         const url = backBtn.dataset.url;
@@ -229,7 +230,7 @@ if (backBtn) {
     });
 }
 
-// --- Mostrar spinner solo al analizar ---
+// Loading solo si se pulsa Analizar
 const form = document.getElementById("upload-form");
 form.addEventListener("submit", (e) => {
     const clicked = e.submitter ? e.submitter.value : null;

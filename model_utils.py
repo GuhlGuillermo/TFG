@@ -210,3 +210,9 @@ def borrar_bd(titulo):
     collection = connect_bd()
     result = collection.delete_many({"titulo": titulo})
     print(f"Borrados {result.deleted_count} documentos con título '{titulo}'")
+
+
+def buscar_titulos_bd(user):
+    collection = connect_bd()
+    titulos = collection.distinct("titulo", {"id_user": user})
+    return titulos

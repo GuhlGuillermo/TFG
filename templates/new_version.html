@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Archivos PDF Subidos</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #fafafa;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            background: white;
+            width: 60%;
+            max-width: 700px;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 0 8px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            border: 1.5px solid #ccc;
+        }
+
+        h1 {
+            font-size: 22px;
+            margin-bottom: 35px;
+            color: #222;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .pdf-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 40px;
+        }
+
+        /* estilo de los botones de títulos */
+        .pdf-btn {
+            border: 1.5px solid #333;
+            border-radius: 6px;
+            background-color: white;
+            padding: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            width: 100%;
+        }
+
+        .pdf-btn:hover {
+            background-color: #f2f2f2;
+        }
+
+        /* botón de atrás */
+        .back-btn {
+            background-color: white;
+            color: #000;
+            border: 1.5px solid #333;
+            padding: 10px 25px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .back-btn:hover {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>ARCHIVOS PDF SUBIDOS PREVIAMENTE</h1>
+
+        <div class="pdf-list">
+            {% for titulo in titulos %}
+                <form action="{{ url_for('ver_archivo', titulo=titulo) }}" method="get">
+                    <button type="submit" class="pdf-btn">{{ titulo }}</button>
+                </form>
+            {% else %}
+                <p>No hay archivos subidos todavía.</p>
+            {% endfor %}
+        </div>
+
+        <button type="button" id="atras" data-url="{{ url_for('dashboard') }}">Atrás</button>
+    </div>
+
+
+<script>
+const backBtn = document.getElementById("atras");
+
+if (backBtn) {
+    backBtn.addEventListener("click", () => {
+        const url = backBtn.dataset.url;
+        if (url) {
+            window.location.href = url;
+        }
+    });
+}
+</script>
+</body>
+</html>
