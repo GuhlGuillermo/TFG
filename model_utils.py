@@ -1,24 +1,37 @@
-from transformers import AutoTokenizer, AutoModelForCausalLM
+from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
 from PyPDF2 import PdfReader
 import torch, json
 import shortuuid
+import configparser
 from pymongo import MongoClient
+from bson import ObjectId
 
+config = configparser.ConfigParser()
+config.read("properties.txt")
 
+# Leemos las configuraciones de la base de datos desde el archivo properties.txt para aumentar la seguridad
+URL_BD = config["MONGODB"]["mongo.url"]
+DATABASE_NAME = config["MONGODB"]["mongo.database"]
+COLLECTION_NAME = config["MONGODB"]["mongo.collection"]
+
+# Nombre del modelo LLM desde properties.txt
+LLM_MODEL_NAME = config["LLM"]["model_name"]
+
+# Cargar el modelo y el tokenizador
 def load_model():
-    model_name = "Qwen/Qwen2.5-3B-Instruct"
+    model_name = LLM_MODEL_NAME
     tokenizer = AutoTokenizer.from_pretrained(model_name)
+    bnb_config = BitsAndBytesConfig(load_in_8bit=True)
     model = AutoModelForCausalLM.from_pretrained(
         model_name,
         device_map="auto",
-        load_in_8bit=True,  
-        torch_dtype=torch.float16
+        quantization_config=bnb_config,  
+        dtype=torch.float16
     )
     return model, tokenizer, model_name
 
-
+# Extraer texto del PDF
 def pdf_to_text(file):
-
     reader = PdfReader(file)
     text = ""
     for page in reader.pages:
@@ -27,9 +40,8 @@ def pdf_to_text(file):
             text += page_text + "\n"
     return text.strip()
 
-
+# Construir el prompt para la revisión científica, para ello usamos el texto extraído del PDF
 def build_prompt(texto_pdf):
-
     return [
         {
             "role": "system",
@@ -41,23 +53,58 @@ def build_prompt(texto_pdf):
         {
             "role": "user",
             "content": (
-                 "You are a scientific reviewer specialized in experimental software engineering. "
+                "You are a scientific reviewer specialized in experimental software engineering. "
                 "Your task is to evaluate a scientific article based on a 10-question checklist (Q1.1 to Q10). "
-                "For each question, provide your answer in the format 'Yes', 'No', or 'N/A', based on the content of the provided article text.\n\n"
-                "The output must be in JSON format, with each question as a key (e.g., 'Q1', 'Q2', ..., 'Q10') and the corresponding answer as the value.\n\n"
-                "For example, the output should look like this:\n"
+                "For each question, provide your answer and a brief justification.\n\n"
+                "The output must be in JSON format, where each question is a key with an object containing:\n"
+                "- 'answer': Must be exactly 'Yes', 'No', or 'N/A'\n"
+                "- 'justification': A brief explanation (maximum 2 sentences) based on the article content.\n\n"
+                "Example output format:\n"
                 "{\n"
-                "    'Q1.1': 'Yes',\n"
-                "    'Q1.2': 'No',\n"
-                "    'Q2': 'N/A',\n"
-                "    'Q3': 'Yes',\n"
-                "    'Q4': 'Yes',\n"
-                "    'Q5': 'No',\n"
-                "    'Q6': 'Yes',\n"
-                "    'Q7': 'No',\n"
-                "    'Q8': 'Yes',\n"
-                "    'Q9': 'No'\n"
-                "    'Q10': 'Yes'\n"
+                "    \"Q1.1\": {\n"
+                "        \"answer\": \"Yes\",\n"
+                "        \"justification\": \"The null hypothesis is explicitly stated in section 2.1 of the methodology.\"\n"
+                "    },\n"
+                "    \"Q1.2\": {\n"
+                "        \"answer\": \"No\",\n"
+                "        \"justification\": \"The document does not mention any alternative hypothesis.\"\n"
+                "    },\n"
+                "    \"Q2\": {\n"
+                "        \"answer\": \"N/A\",\n"
+                "        \"justification\": \"Sample size calculation is not applicable to this type of qualitative research.\"\n"
+                "    },\n"
+                "    \"Q3\": {\n"
+                "        \"answer\": \"Yes\",\n"
+                "        \"justification\": \"Random selection is described in section 3.2.\"\n"
+                "    },\n"
+                "    \"Q4\": {\n"
+                "        \"answer\": \"Yes\",\n"
+                "        \"justification\": \"Random assignment to treatment groups is clearly documented.\"\n"
+                "    },\n"
+                "    \"Q5\": {\n"
+                "        \"answer\": \"No\",\n"
+                "        \"justification\": \"Test assumptions such as normality are not discussed.\"\n"
+                "    },\n"
+                "    \"Q6\": {\n"
+                "        \"answer\": \"Yes\",\n"
+                "        \"justification\": \"Linear models are defined and discussed in section 4.\"\n"
+                "    },\n"
+                "    \"Q7\": {\n"
+                "        \"answer\": \"Yes\",\n"
+                "        \"justification\": \"Results are interpreted with reference to p-values and confidence intervals.\"\n"
+                "    },\n"
+                "    \"Q8\": {\n"
+                "        \"answer\": \"Yes\",\n"
+                "        \"justification\": \"The authors do not calculate or discuss post hoc power.\"\n"
+                "    },\n"
+                "    \"Q9\": {\n"
+                "        \"answer\": \"No\",\n"
+                "        \"justification\": \"Multiple testing corrections like Bonferroni are not mentioned.\"\n"
+                "    },\n"
+                "    \"Q10\": {\n"
+                "        \"answer\": \"Yes\",\n"
+                "        \"justification\": \"Descriptive statistics including means and counts are reported in Table 1.\"\n"
+                "    }\n"
                 "}\n\n"
                 "Checklist:\n"
                 "Q1.1 Are null hypotheses explicitly defined?\n"
@@ -71,17 +118,16 @@ def build_prompt(texto_pdf):
                 "Q8 Do researchers avoid calculating and discussing post hoc power?\n"
                 "Q9 Is multiple testing, e.g., Bonferroni correction, reported and accounted for?\n"
                 "Q10 Are descriptive statistics, such as means and counts, reported?\n\n"
+                "IMPORTANT: Respond ONLY with the JSON object. Do not add any text before or after the JSON.\n\n"
                 "Now evaluate this article text:\n\n" + texto_pdf
             )
         }
     ]
 
-
-def generate_output(model, tokenizer, messages, max_tokens=700):
-
+# Generar la salida del modelo en formato JSON con un limite de 1500 tokens
+def generate_output(model, tokenizer, messages, max_tokens=1500):
     text = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
     model_inputs = tokenizer([text], return_tensors="pt").to(model.device)
-
     generated_ids = model.generate(
         max_new_tokens=max_tokens,
         temperature=0.1, #grado de libertad en la generación
@@ -102,47 +148,26 @@ def generate_output(model, tokenizer, messages, max_tokens=700):
         data = {"error": "Invalid JSON output", "raw": output}
     return data
 
-def get_titulo(file):
-    reader = PdfReader(file)
-    metadata = reader.metadata
-    titulo = metadata.get('/Title')
-    if titulo is None:
-        titulo = "Sin título"
-    return titulo
-
+# Generar un ID único para cada submisión
 def get_id():
     return shortuuid.uuid()
 
-
-def montar_JSON(resultado, id, titulo, fecha, version):
-    json_data = {
-        "ID_PDF": id,
-        "titulo": titulo,
-        "version": {
-            "numero": version,
-            "fecha": fecha,
-            "preguntas_respuestas": resultado
-        }
-    }
-
-    return json.dumps(json_data, indent=4)
-
-
+# Conectar a la base de datos MongoDB
 def connect_bd():
-    client = MongoClient("mongodb://localhost:27017/")
-    db = client["pdf_revisados"]
-    collection = db["revisiones"]
+    client = MongoClient(URL_BD)
+    db = client[DATABASE_NAME]
+    collection = db[COLLECTION_NAME]
     return collection
 
+# Insertar documento JSON en la base de datos
 def insertar_bd(json_doc):
     collection = connect_bd()
     collection.insert_one(json_doc)
 
-
+# Recalcular la versión para una nueva versión de una submisión existente
 def recalcular_version(titulo, user):
     collection = connect_bd()
     docs = collection.find({"titulo": titulo, "id_user": user}, {"versiones.numero": 1, "_id": 0})
-
     max_version = 0
     for doc in docs:
         if "versiones" in doc:
@@ -152,7 +177,7 @@ def recalcular_version(titulo, user):
 
     return max_version + 1
 
-
+# Compueba si ese usuario ya tiene una submisión con ese título
 def comprobar_existencia_submision(titulo, user):
     collection = connect_bd()
     filtro = {"titulo": titulo, "id_user": user}
@@ -161,22 +186,19 @@ def comprobar_existencia_submision(titulo, user):
     print("comprobar_existencia_submision:", doc)
     return doc is not None
     
-
+# Crear la estructura básica de una nueva submisión
 def crear_submision(titulo, user, id_submision, id_pdf):
-    collection = connect_bd()
     data = {
         "id_sub": id_submision,
         "id_user": user,
         "id_pdf": id_pdf,
         "titulo": titulo
     }
-    #collection.insert_one(data)
     return json.dumps(data, indent=4)
 
 
-#hay que añadir un usuario para que no se cargue las submisiones de otros usuarios
+# Modificar la submisión para añadir una nueva versión con los resultados
 def modificar_submision(json_total, version, resultado, fecha):
-    # Aceptar dict o JSON string
     if isinstance(json_total, str):
         json_data = json.loads(json_total)
     else:
@@ -193,8 +215,25 @@ def modificar_submision(json_total, version, resultado, fecha):
 
     json_data["versiones"].append(nueva_version)
 
-    return json_data  # ← devuelve dict
+    return json_data  
 
+# Subir una nueva versión de una submisión existente
+def subir_nueva_version(titulo, id_user, respuestas_dict, fecha, version):
+    collection = connect_bd()
+
+    nueva_version = {
+        "numero": version,
+        "fecha": fecha,
+        "preguntas_respuestas": respuestas_dict
+    }
+
+    result = collection.update_one(
+        {"titulo": titulo, "id_user": id_user},
+        {"$push": {"versiones": nueva_version}}
+    )
+    print("RESULT", result)
+
+# Buscar un documento en la base de datos por título y usuario
 def buscar_en_bd(titulo, user):
     collection = connect_bd()
     doc = collection.find_one({"titulo": titulo, "id_user": user})
@@ -204,15 +243,51 @@ def buscar_en_bd(titulo, user):
         return json.dumps(doc, indent=4, default=str)  # Convertir ObjectId a str
     else:
         return None
-   
-    
-def borrar_bd(titulo):
-    collection = connect_bd()
-    result = collection.delete_many({"titulo": titulo})
-    print(f"Borrados {result.deleted_count} documentos con título '{titulo}'")
 
-
+# Buscar todos los títulos de las submisiones de un usuario
 def buscar_titulos_bd(user):
     collection = connect_bd()
     titulos = collection.distinct("titulo", {"id_user": user})
     return titulos
+
+# Buscar todas las versiones de una submisión para un usuario
+def buscar_versiones_bd(titulo, user):
+    collection = connect_bd()
+    doc = collection.find_one({"titulo": titulo, "id_user": user}, {"versiones": 1, "_id": 0})
+    if doc and "versiones" in doc:
+        return doc["versiones"]
+    else:
+        return []
+
+# Transforma ObjectId a str recursivamente en toda la estructura de datos
+def convertir_objectids(obj):
+    if isinstance(obj, dict):
+        return {k: convertir_objectids(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [convertir_objectids(i) for i in obj]
+    elif isinstance(obj, ObjectId):
+        return str(obj)
+    else:
+        return obj
+    
+# Buscar una versión específica de una submisión para un usuario
+def buscar_version_bd(titulo, user, version_num):
+    coleccion = connect_bd()
+
+    doc = coleccion.find_one(
+        {"titulo": titulo, "id_user": user},
+        {
+            "id_sub": 1,
+            "id_user": 1,
+            "id_pdf": 1,
+            "titulo": 1,
+            "versiones": {"$elemMatch": {"numero": version_num}}
+        }
+    )
+
+    if not doc:
+        print("No se encontró el documento o la versión.")
+        return None
+
+    doc["_id"] = str(doc["_id"]) 
+    return doc

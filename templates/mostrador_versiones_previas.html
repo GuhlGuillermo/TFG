@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Historial de Versiones</title>
+  <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+
+  <style>
+    body {
+        font-family: Arial, sans-serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        background: linear-gradient(135deg, #65707d, #ffffff);
+        color: rgb(0, 0, 0);
+        padding: 40px 0;
+    }
+
+    .container {
+      max-width: 800px;
+      width: 90%;
+      background: white;
+      padding: 30px 40px;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+    }
+
+    h1 {
+      text-align: center;
+      color: #333;
+      margin-bottom: 30px;
+    }
+
+    .accordion {
+      background-color: #f1f1f1;
+      color: #333;
+      cursor: pointer;
+      padding: 14px 18px;
+      width: 100%;
+      border: none;
+      text-align: left;
+      outline: none;
+      font-size: 17px;
+      font-weight: bold;
+      border-radius: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: 0.3s;
+      margin-top: 10px;
+    }
+
+    .accordion:hover { background-color: #e4e4e4; }
+    .accordion.active { background-color: #dcdcdc; }
+    .accordion i { transition: transform 0.3s ease; }
+    .accordion.active i { transform: rotate(90deg); }
+
+    .panel {
+      padding: 0 18px;
+      background-color: white;
+      display: none;
+      overflow: hidden;
+      margin-top: 8px;
+      margin-bottom: 12px;
+    }
+
+    .version-item form { margin: 0; }
+
+    .version-button {
+      background: #f9f9f9;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      padding: 10px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .version-button:hover { background: #eaeaea; }
+
+    .version-button span {
+      font-size: 14px;
+      color: #333;
+    }
+
+    .pdf-icon {
+      color: #b30000;
+      font-size: 20px;
+      margin-right: 10px;
+    }
+
+    .back-btn {
+      display: block;
+      width: 150px;
+      margin: 40px auto 0 auto;
+      background: #eee;
+      border: 1px solid #ccc;
+      padding: 10px;
+      border-radius: 8px;
+      text-align: center;
+      text-decoration: none;
+      color: black;
+      font-weight: bold;
+      transition: 0.2s;
+    }
+
+    .back-btn:hover { background: #ddd; }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h1>Historial de Versiones</h1>
+
+    {% if versiones %}
+      {% for pdf in versiones %}
+        <button class="accordion">
+          <span>
+            <i class="fas fa-file-pdf pdf-icon"></i>{{ pdf.titulo }}
+          </span>
+          <i class="fas fa-chevron-right"></i>
+        </button>
+
+        <div class="panel">
+          {% for v in pdf.versiones %}
+            <div class="version-item">
+              <form action="{{ url_for('ver_version') }}" method="POST">
+                <input type="hidden" name="id_pdf" value="{{ pdf.id_pdf }}">
+                <input type="hidden" name="titulo" value="{{ pdf.titulo }}">
+                <input type="hidden" name="numero" value="{{ v.numero }}">
+
+                <button type="submit" class="version-button" >
+                  <span>Versión {{ v.numero }}</span>
+                  <span>{{ v.fecha }}</span>
+                </button>
+              </form>
+            </div>
+          {% endfor %}
+        </div>
+      {% endfor %}
+    {% else %}
+      <p style="text-align:center; color:gray;">No hay versiones disponibles.</p>
+    {% endif %}
+
+    <a href="{{ url_for('dashboard') }}" class="back-btn">Atrás</a>
+  </div>
+
+  <script>
+    const acc = document.getElementsByClassName("accordion");
+
+    for (let i = 0; i < acc.length; i++) {
+      acc[i].addEventListener("click", function() {
+        this.classList.toggle("active");
+
+        const panel = this.nextElementSibling;
+        panel.style.display = (panel.style.display === "block") ? "none" : "block";
+      });
+    }
+  </script>
+</body>
+</html>

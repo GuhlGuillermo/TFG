@@ -250,7 +250,7 @@ if (backBtn) {
 // Loading solo si se pulsa Analizar
 const form = document.getElementById("upload-form");
 form.addEventListener("submit", (e) => {
-    const clicked = e.submitter ? e.submitter.value : null;
+    const clicked = e.submitter ? e.submitter.value : null; // TODO que hace el e.submitter en todos los navegadores
 
     if (clicked === "analizar") {
         loading.style.display = "block";

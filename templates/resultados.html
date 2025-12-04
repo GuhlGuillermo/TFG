@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Resultados PDF</title>
+
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f4f6f8;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+    }
+
+    .container {
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 15px;
+      padding: 30px;
+      width: 800px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+
+    .header img {
+      width: 40px;
+      height: 40px;
+      margin-right: 15px;
+    }
+
+    h1 {
+      font-size: 1.5em;
+      background-color: #f0f0f0;
+      border-radius: 8px;
+      padding: 10px;
+      text-align: center;
+      flex-grow: 1;
+      margin: 0;
+    }
+
+    .version {
+      background-color: #f0f0f0;
+      border-radius: 8px;
+      padding: 8px;
+      text-align: center;
+      margin: 20px 0;
+      font-weight: bold;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+
+    th, td {
+      border: 1px solid #ddd;
+      padding: 10px;
+      text-align: left;
+    }
+
+    th {
+      background-color: #f8f8f8;
+      font-weight: bold;
+    }
+
+    .btn-back {
+      display: block;
+      margin: 25px auto 0;
+      padding: 10px 25px;
+      background-color: #f0f0f0;
+      border: 1px solid #999;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1em;
+    }
+
+    .btn-back:hover {
+      background-color: #ddd;
+    }
+    th:nth-child(3), td:nth-child(3) {
+      width: 50%;
+      text-align: left;
+    font-size: 0.9em;
+    }
+
+    td:nth-child(2) {
+      font-weight: bold;
+      text-align: center;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    
+    <!-- Encabezado -->
+    <div class="header">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/8/87/PDF_file_icon.svg" alt="PDF Icon">
+      <h1 id="titulo"></h1>
+    </div>
+
+    <!-- Versión -->
+    <div class="version" id="version"></div>
+
+    <!-- Tabla resultados -->
+    <table id="tabla">
+      <thead>
+        <tr>
+          <th>PREGUNTA</th>
+          <th>RESULTADO</th>
+          <th>JUSTIFICACIÓN</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <!-- Botón volver -->
+    <button class="btn-back" onclick="window.history.back()">Atrás</button>
+  </div>
+
+  <script>
+    // JSON que Flask inyecta
+    const data = JSON.parse('{{ json_result|tojson|safe }}');
+
+    // Diccionario de texto de preguntas
+    const preguntasTexto = {
+      "Q1.1": "Are null hypotheses explicitly defined?",
+      "Q1.2": "Are alternative hypotheses explicitly defined?",
+      "Q2": "Has the required sample size been calculated?",
+      "Q3": "Have subjects been randomly selected?",
+      "Q4": "Have subjects been randomly assigned to treatments?",
+      "Q5": "Have the test assumptions been checked?",
+      "Q6": "Has the definition of linear models been discussed?",
+      "Q7": "Have the analysis results been interpreted with relevant statistics?",
+      "Q8": "Do researchers avoid post hoc power?",
+      "Q9": "Is multiple testing reported and accounted for?",
+      "Q10": "Are descriptive statistics reported?"
+    };
+
+    // Mostrar título
+    document.getElementById("titulo").textContent = data.titulo;
+
+    // Obtener última versión
+    const versionActual = data.versiones[data.versiones.length - 1];
+    document.getElementById("version").textContent =
+      `Versión ${versionActual.numero} (${versionActual.fecha})`;
+
+    // Rellenar tabla
+    const tbody = document.querySelector("#tabla tbody");
+    tbody.innerHTML = ""; // Limpieza por si acaso
+
+    Object.entries(versionActual.preguntas_respuestas).forEach(([codigo, resultado]) => {
+      const tr = document.createElement("tr");
+
+      // Columna pregunta
+      const tdPregunta = document.createElement("td");
+      tdPregunta.textContent = preguntasTexto[codigo] || codigo;
+
+      // Columna resultado
+      const tdResultado = document.createElement("td");
+
+      // Columna justificación
+      const tdJustificacion = document.createElement("td");
+
+      // Compatibilidad formato antiguo y nuevo
+      if (typeof resultado === "object" && resultado !== null) {
+        tdResultado.textContent = resultado.answer || "N/A";
+        tdJustificacion.textContent = resultado.justification || "Sin justificación";
+      } else {
+        tdResultado.textContent = resultado;
+        tdJustificacion.textContent = "-";
+      }
+
+      tr.appendChild(tdPregunta);
+      tr.appendChild(tdResultado);
+      tr.appendChild(tdJustificacion);
+      tbody.appendChild(tr);
+    });
+  </script>
+
+</body>
+</html>

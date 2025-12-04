@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Cerrando sesión...</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: linear-gradient(135deg, #65707d, #ffffff);
+            margin: 0;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            text-align: center;
+            width: 400px;
+        }
+        .btn {
+            background: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            margin-top: 20px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .btn:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+    <h2>Cerrar sesión</h2>
+
+    <p>Haz clic en el botón para cerrar tu sesión en ORCID.</p>
+
+    <button class="btn" id="logout-btn">Aceptar y cerrar sesión</button>
+
+    <p id="msg" style="display:none; margin-top:20px;">
+        Cerrando sesión en ORCID... por favor espera.
+    </p>
+</div>
+
+<script>
+document.getElementById("logout-btn").addEventListener("click", () => {
+
+    const msg = document.getElementById("msg");
+    const btn = document.getElementById("logout-btn");
+
+    msg.style.display = "block";
+    btn.disabled = true;
+
+    // 1. ORCID logout real (funciona)
+    const popup = window.open("https://orcid.org/signout", "orcidsignout");
+
+    // 2. Revisión periódica para cerrar popup y volver a la app
+    const timer = setInterval(() => {
+
+        // Si el usuario cerró ORCID o ORCID terminó y se autocierra
+        if (popup.closed) {
+            clearInterval(timer);
+            window.location.href = "/"; // ← reinicia tu app aquí
+        }
+
+        // Intentar cerrar ORCID silenciosamente (permitido cuando la página cargó)
+        try {
+            popup.close();
+        } catch (_) {
+            // Ignorado por restricciones cross-domain
+        }
+
+    }, 200);
+});
+</script>
+
+</body>
+</html>

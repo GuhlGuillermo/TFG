@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Menu</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: "Segoe UI", sans-serif;
+      background: linear-gradient(135deg, #65707d, #ffffff);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .contenedor {
+      display: flex;
+      gap: 25px;
+      justify-content: center;
+      align-items: center;
+      flex-wrap: wrap;
+      width: 90vw;
+      height: 70vh;
+    }
+
+    .tarjeta {
+      background-color: #ffffff;
+      flex: 1 1 28%;
+      height: 100%;
+      min-width: 300px;
+      border-radius: 20px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+      padding: 30px;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      text-align: center;
+    }
+
+    .tarjeta:hover {
+      transform: translateY(-10px);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+
+    .tarjeta h2 {
+      margin: 0;
+      font-size: 1.6em;
+      color: #333333;
+    }
+
+    .tarjeta p {
+      color: #555555;
+      font-size: 1em;
+      margin: 15px 10px 25px;
+      line-height: 1.4;
+    }
+
+    .boton {
+      width: 80%;
+      padding: 15px;
+      border: none;
+      border-radius: 12px;
+      background-color: rgb(172, 161, 236);
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+      font-size: 1.1em;
+    }
+
+    .boton:hover {
+      background-color: #000000;
+    }
+
+    /* Estilos para el botón de logout */
+    .logout-container {
+      position: fixed;
+      top: 60px;
+      right: 60px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 10px;
+    }
+
+
+    .logout-button {
+      background-color: #dc3545;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: bold;
+      transition: background-color 0.3s ease;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    .logout-button:hover {
+      background-color: #c82333;
+    }
+
+  </style>
+</head>
+<body>
+  <!-- Botón de logout en la esquina superior derecha -->
+  <div class="logout-container">
+    <button class="logout-button" type="button" id="logout" data-url="{{ url_for('logout') }}">
+      Log Out
+    </button>
+  </div>
+
+  <form method="POST" action="{{ url_for('dashboard') }}">
+    <div class="contenedor">
+
+      <div class="tarjeta">
+        <h2>Generar una nueva submission</h2>
+        <p>Descripción breve de la funcionalidad o contenido del primer botón. Puedes cambiar este texto por lo que necesites.</p>
+        <button class="boton" type="submit" name="action" value="nueva_submision">Nueva Submission</button>
+      </div>
+
+      <div class="tarjeta">
+        <h2>Subir una nueva versión</h2>
+        <p>Pequeño texto que explica la función o acción que realiza el segundo botón dentro de la aplicación.</p>
+        <button class="boton" type="submit" name="action" value="nueva_version">Nueva Versión</button>
+      </div>
+
+      <div class="tarjeta">
+        <h2>Explorar resultados previos</h2>
+        <p>Breve descripción o indicación sobre lo que hace esta sección o la acción que ejecuta este botón.</p>
+        <button class="boton" type="submit" name="action" value="explorar_resultados">Explorar Resultados</button>
+      </div>
+
+    </div>
+  </form>
+<script>
+    const logout = document.getElementById("logout");
+    // Script del efecto acordeón
+if (logout) {
+    logout.addEventListener("click", () => {
+        const url = logout.dataset.url;
+        if (url) {
+            window.location.href = url;
+        }
+    });
+}
+  </script>
+</body>
+</html>

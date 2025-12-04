@@ -149,7 +149,7 @@
 
         <div class="button-row">
             <button type="button" id="atras" data-url="{{ url_for('nueva_version') }}">Atrás</button>
-            <button type="submit" name="action" value="nueva_submision" id="analyze-btn" style="display:none;">
+            <button type="submit" name="action" value="nueva_version" id="analyze-btn" style="display:none;">
                 Analizar PDF
             </button>
         </div>
@@ -233,7 +233,7 @@ if (backBtn) {
 const form = document.getElementById("upload-form");
 form.addEventListener("submit", (e) => {
     const clicked = e.submitter ? e.submitter.value : null;
-    if (clicked === "nueva_submision") {
+    if (clicked === "analizar") {
         loading.style.display = "block";
         analyzeBtn.disabled = true;
     } else {

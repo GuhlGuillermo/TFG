@@ -1,0 +1,21 @@
+# ------------CONFIGURACIÓN ORCID (OAuth2)-----------------
+[ORCID]
+orcid.client_id=your_orcid_client_id_here
+orcid.client_secret=your_orcid_client_secret_here
+orcid.redirect_uri=http://192.168.1.140:5000/callback
+orcid.base_url=https://orcid.org
+
+# -------------- MONGODB CONSULTAS----------------
+[MONGODB]
+mongo.url=your_mongo_url
+mongo.database=your_mongo_name_database
+mongo.collection=your_mongo_name_collection
+
+# -------------- CONFIGURACION FLASK ---------------
+[FLASK]
+app.secret_key = your_flask_secret_key
+
+#-------------- MODELO DEL LLM ---------------
+[LLM]
+model_name = Qwen/Qwen2.5-3B-Instruct 
+# You can change the model
