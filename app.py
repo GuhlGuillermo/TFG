@@ -2,6 +2,7 @@ import webbrowser
 import threading
 import requests
 import configparser
+import logging
 from flask import Flask, render_template, request, redirect, session, url_for, flash
 from model_utils import (
     load_model, pdf_to_text, build_prompt, generate_output, get_id, insertar_bd, recalcular_version,
@@ -17,6 +18,15 @@ app = Flask(__name__)
 
 # Leemos la clave secreta desde el archivo properties.txt para mayor seguridad
 app.secret_key = config["FLASK"]["app.secret_key"]
+
+# Configuración del logging para resgistrar eventos para depuracion 
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    datefmt='%m-%d %H:%M:%S'
+)
+
+logger = logging.getLogger(__name__)
 
 
 # Cargar modelo
@@ -133,7 +143,10 @@ def nueva_submission():
     global json_total, version
     result = None
     mensaje = ""
-    user=session.get("orcid_id", "invitado")
+    if "orcid_id" not in session:
+        logging.warning("Intento de acceso a nueva_submision sin estar autenticado.")
+        return redirect(url_for("home")) 
+    user = session["orcid_id"]
     id_submision = get_id()
 
     if request.method == "POST":
@@ -146,28 +159,32 @@ def nueva_submission():
             if accion == "nueva_submision":
                 titulo = request.form.get("titulo")
                 version = 1
-                id_pdf = get_id()
                 fecha = str(datetime.now()).split(".")[0]
                 # Comprobar si ya existe una sumisión con ese título para el usuario en el caso de existencia => error
                 if(comprobar_existencia_submision(titulo, user) == False):
                     # Procesar el PDF y generar el output
-
+                    logger.info(f"Iniciando el procesamiento del PDF subido por {user} con título '{titulo}'")
                     text = pdf_to_text(uploaded_file)
                     messages = build_prompt(text)
+                    logger.info(f"Generado correctamente el prompt. Llamando al modelo para generar la salida'")
                     result = generate_output(model, tokenizer, messages)
+                    logger.info(f"Salida generada correctamente por el modelo para la sumisión '{titulo}'")
                     print("Creando nueva sumisión")
-
                     # Crear el JSON completo y guardarlo en la base de datos
-                    json_total = crear_submision(titulo, user, id_submision,id_pdf)
-                    json_total = modificar_submision(json_total, version, result, fecha) 
+                    json_total = crear_submision(titulo, user, id_submision)
+                    json_total = modificar_submision(json_total, version, result, fecha)
+                    logger.info(f"Insertando la sumisión '{titulo}' en la base de datos para el usuario {user}")
                     insertar_bd(json_total)
+                    logger.info(f"Sumisión '{titulo}' insertada correctamente en la base de datos para el usuario {user}")
                     print(json_total)
                     json_total = convertir_objectids(json_total)
                     print("JSON TOTAL CONVERTIDO:", json_total)
                     # Mostrar los resultados en la pantalla
+                    logger.info(f"Sumisión '{titulo}' creada correctamente para el usuario {user}, mostrando resultados")
                     return render_template("resultados.html", json_result=json_total)
                 else:
-                    flash("Esa submission ya existe, pruebe a subir una nueva versión", "error")
+                    logger.warning(f"El usuario {user} ha intentado subir una sumisión con título '{titulo}' que ya existe.")
+                    flash("That submission already exists, please try uploading a new version", "error")
                 print(json_total)
         else:
             mensaje = "Por favor, sube un archivo PDF válido."
@@ -178,7 +195,9 @@ def nueva_submission():
 @app.route("/nueva_version", methods=['GET', 'POST'])
 def nueva_version():
     # Buscar los títulos de las sumisiones previas del usuario para mostrarlos en un desplegable
-    user=session.get("orcid_id", "invitado")
+    if "orcid_id" not in session:
+        return redirect(url_for("home")) 
+    user = session["orcid_id"]
     titulos = buscar_titulos_bd(user)
     print("Títulos encontrados para el usuario:", titulos)
     return render_template("new_version.html", titulos=titulos)
@@ -186,14 +205,19 @@ def nueva_version():
 # NUEVA VERSIÓN - SUBIR ARCHIVO
 @app.route("/nueva_version/<titulo>", methods=['GET', 'POST'])
 def ver_archivo(titulo):
-    doc = buscar_en_bd(titulo, session.get("orcid_id", "invitado"))
+    if "orcid_id" not in session:
+        return redirect(url_for("home")) 
+    user = session["orcid_id"]
+    doc = buscar_en_bd(titulo, user)
     if not doc:
-        return f"No se encontró el archivo '{titulo}'", 404
+        return f"Not found '{titulo}'", 404
 
     if request.method == "POST":
         uploaded_file = request.files.get("pdf")
         accion = request.form.get("action")
-        user = session.get("orcid_id", "invitado")
+        if "orcid_id" not in session:
+            return redirect(url_for("home")) 
+        user = session["orcid_id"]
         print("Acción recibida:", accion)
         # comprobar que se ha subido un archivo PDF válido
         if uploaded_file and uploaded_file.filename.endswith(".pdf"):
@@ -213,14 +237,16 @@ def ver_archivo(titulo):
                 # Mostrar los resultados en la pantalla
                 return render_template("resultados.html", json_result=json_data)
 
-    return render_template("index.html")
+    return render_template("index.html", model_name = model_name)
 
 # VER HISTORIAL DE SUBMISIÓNES Y VERSIONES
 @app.route("/ver_historial",methods = ['GET', 'POST'])
 def ver_historial():
     # Almacenar en un diccionario los títulos y sus respectivas versiones previamente subidas
     dict = []
-    user=session.get("orcid_id", "invitado")
+    if "orcid_id" not in session:
+        return redirect(url_for("home")) 
+    user = session["orcid_id"]
     titulos = buscar_titulos_bd(user)
     for titulo in titulos:
         versiones = buscar_versiones_bd(titulo, user)
@@ -239,13 +265,25 @@ def ver_version():
     # Consulta en la base de datos la versión específica solicitada
     titulo = request.form.get("titulo")
     numero = request.form.get("numero")
-    json_datos = buscar_version_bd(titulo, session.get("orcid_id", "invitado"), int(numero))
+    if "orcid_id" not in session:
+        return redirect(url_for("home")) 
+    user = session["orcid_id"]
+    json_datos = buscar_version_bd(titulo, user, int(numero))
 
     print("JSON DATOS DE LA VERSIÓN SOLICITADA:", json_datos)
     print("Tipo de JSON DATOS:", type(json_datos))
 
     # Mostrar los resultados en la pantalla
     return render_template("resultados.html", json_result=convertir_objectids(json_datos))
+
+
+# --- RUTA SOLO PARA TESTING ---
+# NOS SALTAMOS EL LOGIN DE ORCID PARA HACER EL TESTIN YA QUE ORCID TIENE PUEDE DETECTAR AUTOMATIZACIÓN
+@app.route("/bypass_login")
+def bypass_login():
+    session["orcid_id"] = "0000-0000-0000-0000" 
+    session["name"] = "Usuario Test"
+    return "Login simulado OK"
 
 #  ABRIR NAVEGADOR AUTOMÁTICAMENTE
 def open_browser():

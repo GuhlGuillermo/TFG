@@ -3,17 +3,23 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Resultados PDF</title>
+  <title>Results PDF</title>
 
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
-      background-color: #f4f6f8;
+
+      /* 🔥 Degradado idéntico a toda la app */
+      background: linear-gradient(135deg, #65707d, #ffffff);
+      background-attachment: fixed;
+      min-height: 100vh;
+
       display: flex;
       justify-content: center;
       align-items: center;
-      min-height: 100vh;
+
       margin: 0;
+      padding: 40px 0;
     }
 
     .container {
@@ -45,6 +51,7 @@
       text-align: center;
       flex-grow: 1;
       margin: 0;
+      color: #4169E1;
     }
 
     .version {
@@ -87,10 +94,11 @@
     .btn-back:hover {
       background-color: #ddd;
     }
+
     th:nth-child(3), td:nth-child(3) {
       width: 50%;
       text-align: left;
-    font-size: 0.9em;
+      font-size: 0.9em;
     }
 
     td:nth-child(2) {
@@ -116,16 +124,16 @@
     <table id="tabla">
       <thead>
         <tr>
-          <th>PREGUNTA</th>
-          <th>RESULTADO</th>
-          <th>JUSTIFICACIÓN</th>
+          <th>QUESTION</th>
+          <th>RESULT</th>
+          <th>JUSTIFICATION</th>
         </tr>
       </thead>
       <tbody></tbody>
     </table>
 
     <!-- Botón volver -->
-    <button class="btn-back" onclick="window.history.back()">Atrás</button>
+    <button class="btn-back" onclick="window.history.back()">Back</button>
   </div>
 
   <script>
@@ -139,7 +147,7 @@
       "Q2": "Has the required sample size been calculated?",
       "Q3": "Have subjects been randomly selected?",
       "Q4": "Have subjects been randomly assigned to treatments?",
-      "Q5": "Have the test assumptions been checked?",
+      "Q5": "Have test assumptions been checked?",
       "Q6": "Has the definition of linear models been discussed?",
       "Q7": "Have the analysis results been interpreted with relevant statistics?",
       "Q8": "Do researchers avoid post hoc power?",
@@ -153,26 +161,21 @@
     // Obtener última versión
     const versionActual = data.versiones[data.versiones.length - 1];
     document.getElementById("version").textContent =
-      `Versión ${versionActual.numero} (${versionActual.fecha})`;
+      `Version ${versionActual.numero} (${versionActual.fecha})`;
 
     // Rellenar tabla
     const tbody = document.querySelector("#tabla tbody");
-    tbody.innerHTML = ""; // Limpieza por si acaso
+    tbody.innerHTML = "";
 
     Object.entries(versionActual.preguntas_respuestas).forEach(([codigo, resultado]) => {
       const tr = document.createElement("tr");
 
-      // Columna pregunta
       const tdPregunta = document.createElement("td");
       tdPregunta.textContent = preguntasTexto[codigo] || codigo;
 
-      // Columna resultado
       const tdResultado = document.createElement("td");
-
-      // Columna justificación
       const tdJustificacion = document.createElement("td");
 
-      // Compatibilidad formato antiguo y nuevo
       if (typeof resultado === "object" && resultado !== null) {
         tdResultado.textContent = resultado.answer || "N/A";
         tdJustificacion.textContent = resultado.justification || "Sin justificación";

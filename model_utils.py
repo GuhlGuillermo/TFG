@@ -185,13 +185,13 @@ def comprobar_existencia_submision(titulo, user):
 
     print("comprobar_existencia_submision:", doc)
     return doc is not None
-    
+
+#TODO quitar el id_pdf de la creación de la submisión
 # Crear la estructura básica de una nueva submisión
-def crear_submision(titulo, user, id_submision, id_pdf):
+def crear_submision(titulo, user, id_submision):
     data = {
         "id_sub": id_submision,
         "id_user": user,
-        "id_pdf": id_pdf,
         "titulo": titulo
     }
     return json.dumps(data, indent=4)

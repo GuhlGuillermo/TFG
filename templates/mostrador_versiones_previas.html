@@ -13,7 +13,6 @@
         align-items: center;
         min-height: 100vh;
         background: linear-gradient(135deg, #65707d, #ffffff);
-        color: rgb(0, 0, 0);
         padding: 40px 0;
     }
 
@@ -28,7 +27,7 @@
 
     h1 {
       text-align: center;
-      color: #333;
+      color: #4169E1;
       margin-bottom: 30px;
     }
 
@@ -114,7 +113,7 @@
 
 <body>
   <div class="container">
-    <h1>Historial de Versiones</h1>
+    <h1>Version History</h1>
 
     {% if versiones %}
       {% for pdf in versiones %}
@@ -134,7 +133,7 @@
                 <input type="hidden" name="numero" value="{{ v.numero }}">
 
                 <button type="submit" class="version-button" >
-                  <span>Versión {{ v.numero }}</span>
+                  <span>Version {{ v.numero }}</span>
                   <span>{{ v.fecha }}</span>
                 </button>
               </form>
@@ -143,10 +142,10 @@
         </div>
       {% endfor %}
     {% else %}
-      <p style="text-align:center; color:gray;">No hay versiones disponibles.</p>
+      <p style="text-align:center; color:gray;">No versions available.</p>
     {% endif %}
 
-    <a href="{{ url_for('dashboard') }}" class="back-btn">Atrás</a>
+    <a href="{{ url_for('dashboard') }}" class="back-btn">Back</a>
   </div>
 
   <script>
