@@ -277,8 +277,9 @@ def ver_version():
     return render_template("resultados.html", json_result=convertir_objectids(json_datos))
 
 
-# --- RUTA SOLO PARA TESTING ---
+# RUTA SOLO PARA TESTING
 # NOS SALTAMOS EL LOGIN DE ORCID PARA HACER EL TESTIN YA QUE ORCID TIENE PUEDE DETECTAR AUTOMATIZACIÓN
+#TODO Asegurarnos que nadie tiene acceso a esta ruta
 @app.route("/bypass_login")
 def bypass_login():
     session["orcid_id"] = "0000-0000-0000-0000" 
