@@ -9,7 +9,6 @@
     body {
       font-family: 'Segoe UI', sans-serif;
 
-      /* 🔥 Degradado idéntico a toda la app */
       background: linear-gradient(135deg, #65707d, #ffffff);
       background-attachment: fixed;
       min-height: 100vh;
@@ -111,16 +110,13 @@
 <body>
   <div class="container">
     
-    <!-- Encabezado -->
     <div class="header">
       <img src="https://upload.wikimedia.org/wikipedia/commons/8/87/PDF_file_icon.svg" alt="PDF Icon">
       <h1 id="titulo"></h1>
     </div>
 
-    <!-- Versión -->
     <div class="version" id="version"></div>
 
-    <!-- Tabla resultados -->
     <table id="tabla">
       <thead>
         <tr>
@@ -132,15 +128,13 @@
       <tbody></tbody>
     </table>
 
-    <!-- Botón volver -->
     <button class="btn-back" onclick="window.history.back()">Back</button>
   </div>
 
   <script>
-    // JSON que Flask inyecta
+
     const data = JSON.parse('{{ json_result|tojson|safe }}');
 
-    // Diccionario de texto de preguntas
     const preguntasTexto = {
       "Q1.1": "Are null hypotheses explicitly defined?",
       "Q1.2": "Are alternative hypotheses explicitly defined?",
@@ -155,15 +149,12 @@
       "Q10": "Are descriptive statistics reported?"
     };
 
-    // Mostrar título
     document.getElementById("titulo").textContent = data.titulo;
 
-    // Obtener última versión
     const versionActual = data.versiones[data.versiones.length - 1];
     document.getElementById("version").textContent =
       `Version ${versionActual.numero} (${versionActual.fecha})`;
 
-    // Rellenar tabla
     const tbody = document.querySelector("#tabla tbody");
     tbody.innerHTML = "";
 

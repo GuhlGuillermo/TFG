@@ -76,7 +76,6 @@
       background-color: #000000;
     }
 
-    /* Estilos para el botón de logout */
     .logout-container {
       position: fixed;
       top: 60px;
@@ -108,7 +107,6 @@
   </style>
 </head>
 <body>
-  <!-- Botón de logout en la esquina superior derecha -->
   <div class="logout-container">
     <button class="logout-button" type="button" id="logout" data-url="{{ url_for('logout') }}">
       Log Out
@@ -144,7 +142,6 @@
   </form>
 <script>
     const logout = document.getElementById("logout");
-    // Script del efecto acordeón
 if (logout) {
     logout.addEventListener("click", () => {
         const url = logout.dataset.url;

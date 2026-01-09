@@ -6,18 +6,20 @@ import configparser
 from pymongo import MongoClient
 from bson import ObjectId
 
+# Cargamos configuraciones para leer properties.txt
 config = configparser.ConfigParser()
 config.read("properties.txt")
 
-# Leemos las configuraciones de la base de datos desde el archivo properties.txt para aumentar la seguridad
+# Leemos las configuraciones de la base de datos en properties.txt para aumentar la seguridad
 URL_BD = config["MONGODB"]["mongo.url"]
 DATABASE_NAME = config["MONGODB"]["mongo.database"]
 COLLECTION_NAME = config["MONGODB"]["mongo.collection"]
 
-# Nombre del modelo LLM desde properties.txt
+# Leemos el nombre del modelo del archivo properties.txt, 
+# en caso de querer cambiarlo bastaría con modificar el archivo properties.txt
 LLM_MODEL_NAME = config["LLM"]["model_name"]
 
-# Cargar el modelo y el tokenizador
+# Cargar el modelo (ejecución en GPU + CPU) y el tokenizador
 def load_model():
     model_name = LLM_MODEL_NAME
     tokenizer = AutoTokenizer.from_pretrained(model_name)
@@ -30,7 +32,7 @@ def load_model():
     )
     return model, tokenizer, model_name
 
-# Extraer texto del PDF
+# Extraemos el texto del PDF usando PyPDF2
 def pdf_to_text(file):
     reader = PdfReader(file)
     text = ""
@@ -40,7 +42,8 @@ def pdf_to_text(file):
             text += page_text + "\n"
     return text.strip()
 
-# Construir el prompt para la revisión científica, para ello usamos el texto extraído del PDF
+# Construimos el prompt para la revisión científica (en inglés),
+# para ello usamos el texto extraído del PDF
 def build_prompt(texto_pdf):
     return [
         {
@@ -124,13 +127,13 @@ def build_prompt(texto_pdf):
         }
     ]
 
-# Generar la salida del modelo en formato JSON con un limite de 1500 tokens
+# Generamos la salida del modelo en formato JSON con un límite de 1500 tokens
 def generate_output(model, tokenizer, messages, max_tokens=1500):
     text = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
     model_inputs = tokenizer([text], return_tensors="pt").to(model.device)
     generated_ids = model.generate(
         max_new_tokens=max_tokens,
-        temperature=0.1, #grado de libertad en la generación
+        temperature=0.1, # grado de libertad en la generación
         top_p=0.8,
         do_sample=False,
         pad_token_id=tokenizer.eos_token_id,
@@ -148,23 +151,23 @@ def generate_output(model, tokenizer, messages, max_tokens=1500):
         data = {"error": "Invalid JSON output", "raw": output}
     return data
 
-# Generar un ID único para cada submisión
+# Generar un ID único para cada submission
 def get_id():
     return shortuuid.uuid()
 
-# Conectar a la base de datos MongoDB
+# Nos conectamos a la bd de MongoDB
 def connect_bd():
     client = MongoClient(URL_BD)
     db = client[DATABASE_NAME]
     collection = db[COLLECTION_NAME]
     return collection
 
-# Insertar documento JSON en la base de datos
+# Insertar JSON en la bd
 def insertar_bd(json_doc):
     collection = connect_bd()
     collection.insert_one(json_doc)
 
-# Recalcular la versión para una nueva versión de una submisión existente
+# Calcular el número de versión para añadir una nueva versión de una submission
 def recalcular_version(titulo, user):
     collection = connect_bd()
     docs = collection.find({"titulo": titulo, "id_user": user}, {"versiones.numero": 1, "_id": 0})
@@ -174,10 +177,9 @@ def recalcular_version(titulo, user):
             for v in doc["versiones"]:
                 if v["numero"] > max_version:
                     max_version = v["numero"]
-
     return max_version + 1
 
-# Compueba si ese usuario ya tiene una submisión con ese título
+# Comprobamos si el usuario tiene una submission con ese título
 def comprobar_existencia_submision(titulo, user):
     collection = connect_bd()
     filtro = {"titulo": titulo, "id_user": user}
@@ -186,8 +188,7 @@ def comprobar_existencia_submision(titulo, user):
     print("comprobar_existencia_submision:", doc)
     return doc is not None
 
-#TODO quitar el id_pdf de la creación de la submisión
-# Crear la estructura básica de una nueva submisión
+# Creamos la estructura básica de una nueva submission
 def crear_submision(titulo, user, id_submision):
     data = {
         "id_sub": id_submision,
@@ -197,7 +198,7 @@ def crear_submision(titulo, user, id_submision):
     return json.dumps(data, indent=4)
 
 
-# Modificar la submisión para añadir una nueva versión con los resultados
+# Modificar la estructura basica previamente creada para añadir una nueva versión (primera versión)
 def modificar_submision(json_total, version, resultado, fecha):
     if isinstance(json_total, str):
         json_data = json.loads(json_total)
@@ -217,7 +218,7 @@ def modificar_submision(json_total, version, resultado, fecha):
 
     return json_data  
 
-# Subir una nueva versión de una submisión existente
+# Subir una nueva versión de una submission existente (versiones posteriores)
 def subir_nueva_version(titulo, id_user, respuestas_dict, fecha, version):
     collection = connect_bd()
 
@@ -233,10 +234,11 @@ def subir_nueva_version(titulo, id_user, respuestas_dict, fecha, version):
     )
     print("RESULT", result)
 
-# Buscar un documento en la base de datos por título y usuario
+# Buscar un documento en la bd por título y usuario
 def buscar_en_bd(titulo, user):
     collection = connect_bd()
     doc = collection.find_one({"titulo": titulo, "id_user": user})
+
     if doc:
         print("buscar_en_bd: encontrado", doc)
         print("Tipo:", type(doc))
@@ -244,22 +246,23 @@ def buscar_en_bd(titulo, user):
     else:
         return None
 
-# Buscar todos los títulos de las submisiones de un usuario
+# Buscar todos los títulos de las submissions de un usuario
 def buscar_titulos_bd(user):
     collection = connect_bd()
     titulos = collection.distinct("titulo", {"id_user": user})
     return titulos
 
-# Buscar todas las versiones de una submisión para un usuario
+# Buscar todas las versiones de una submission de un usuario
 def buscar_versiones_bd(titulo, user):
     collection = connect_bd()
     doc = collection.find_one({"titulo": titulo, "id_user": user}, {"versiones": 1, "_id": 0})
+
     if doc and "versiones" in doc:
         return doc["versiones"]
     else:
         return []
 
-# Transforma ObjectId a str recursivamente en toda la estructura de datos
+# Función recursiva que se encarga de parsear de ObjectId a str 
 def convertir_objectids(obj):
     if isinstance(obj, dict):
         return {k: convertir_objectids(v) for k, v in obj.items()}
@@ -269,11 +272,10 @@ def convertir_objectids(obj):
         return str(obj)
     else:
         return obj
-    
-# Buscar una versión específica de una submisión para un usuario
+
+# Extraer la información de una versión específica 
 def buscar_version_bd(titulo, user, version_num):
     coleccion = connect_bd()
-
     doc = coleccion.find_one(
         {"titulo": titulo, "id_user": user},
         {
@@ -288,6 +290,6 @@ def buscar_version_bd(titulo, user, version_num):
     if not doc:
         print("No se encontró el documento o la versión.")
         return None
-
+    
     doc["_id"] = str(doc["_id"]) 
     return doc

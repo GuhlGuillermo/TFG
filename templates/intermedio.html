@@ -61,23 +61,19 @@ document.getElementById("logout-btn").addEventListener("click", () => {
     msg.style.display = "block";
     btn.disabled = true;
 
-    // 1. ORCID logout real (funciona)
     const popup = window.open("https://orcid.org/signout", "orcidsignout");
 
-    // 2. Revisión periódica para cerrar popup y volver a la app
     const timer = setInterval(() => {
 
-        // Si el usuario cerró ORCID o ORCID terminó y se autocierra
         if (popup.closed) {
             clearInterval(timer);
-            window.location.href = "/"; // ← reinicia tu app aquí
+            window.location.href = "/"; 
         }
 
-        // Intentar cerrar ORCID silenciosamente (permitido cuando la página cargó)
+
         try {
             popup.close();
         } catch (_) {
-            // Ignorado por restricciones cross-domain
         }
 
     }, 200);

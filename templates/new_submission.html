@@ -4,15 +4,15 @@
     <meta charset="UTF-8">
     <title>Software de revisión preliminar de Registered Reports</title>
 
-    <!-- ICONOS: PDF logo funcionando -->
+ 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
     <style>
         body {
             font-family: Arial, sans-serif;
             background: linear-gradient(135deg, #65707d, #ffffff);
-            background-attachment: fixed; /* 🔥 evita el corte del degradado */
-            min-height: 100vh;           /* 🔥 fondo siempre cubre la pantalla */
+            background-attachment: fixed; 
+            min-height: 100vh;          
             color: #333;
             text-align: center;
             margin: 0;
@@ -148,7 +148,7 @@
             <input type="file" name="pdf" id="file-input" accept=".pdf">
         </label>
 
-        <!-- LOGO PDF que se muestra al subir archivo -->
+
         <div id="file-info" style="display:none; margin-top:10px;">
             <i class="fa-solid fa-file-pdf" style="color:#dc3545; font-size:22px; margin-right:8px;"></i>
             <span id="file-name" style="font-weight:bold;"></span>
@@ -173,7 +173,7 @@ const fileName = document.getElementById("file-name");
 const analyzeBtn = document.getElementById("analyze-btn");
 const backBtn = document.getElementById("atras");
 
-// DRAG & DROP
+
 dropzone.addEventListener("dragover", e => {
     e.preventDefault();
     dropzone.style.backgroundColor = "#eef4ff";
@@ -193,20 +193,24 @@ dropzone.addEventListener("drop", e => {
     }
 });
 
-// SELECCIÓN NORMAL
+
 fileInput.addEventListener("change", e => {
     const file = e.target.files[0];
-    if (file) showFile(file);
+    if (file && file.name.endsWith(".pdf")){
+        showFile(file);
+    } else {
+        alert("Please upload a valid PDF file.");
+        e.target.value = "";
+    }
 });
 
-// MOSTRAR ARCHIVO Y BOTÓN ANALIZAR
 function showFile(file) {
     fileInfo.style.display = "inline-flex";
     fileName.textContent = file.name;
     analyzeBtn.style.display = "inline-block";
 }
 
-// BOTÓN ATRÁS
+
 if (backBtn) {
     backBtn.addEventListener("click", () => {
         const url = backBtn.dataset.url;
