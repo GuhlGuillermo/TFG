@@ -279,12 +279,12 @@ def ver_version():
 
 # RUTA SOLO PARA TESTING
 # NOS SALTAMOS EL LOGIN DE ORCID PARA HACER EL TESTING YA QUE ORCID TIENE PUEDE DETECTAR AUTOMATIZACIÓN
-#TODO Asegurarnos que nadie tiene acceso a esta ruta
-@app.route("/bypass_login")
-def bypass_login():
-    session["orcid_id"] = "0000-0000-0000-0000" 
-    session["name"] = "Usuario Test"
-    return "Login simulado OK"
+# En caso de querer probar el testing, descomentar este bloque
+# @app.route("/bypass_login")
+# def bypass_login():
+#     session["orcid_id"] = "0000-0000-0000-0000" 
+#     session["name"] = "Usuario Test"
+#     return "Login simulado OK"
 
 #  ABRIR NAVEGADOR AUTOMÁTICAMENTE
 def open_browser():
